@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>90s Nepali Songs · जुना नेपाली गीत</title>
+<meta name="description" content="Press play and classic Nepali songs from the 90s and 2000s keep playing. Free, no sign-up.">
+<meta name="theme-color" content="#241f3a">
+<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.dip=e})</script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="90s Nepali">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f0a878'/%3E%3Cpath d='M1 28 9 8l4 5 5-8 5 9 9 14z' fill='%238a8db5'/%3E%3Cpath d='M9 8l-3 6h5zM18 5l-3.500 6H21z' fill='%23fff7ea'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="{{FONT}}" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="{{FONT}}"></noscript>
+<style>{{CSS}}</style>
+</head>
+<body>
+<header class="hero" id="hero">
+{{HERO}}
+<div class="bar" aria-label="Kathmandu time">
+<svg class="ck" viewBox="0 0 48 48" role="img" aria-label="Analog clock showing Nepal time"><circle cx="24" cy="24" r="22" fill="#1c1632" fill-opacity=".55" stroke="#fff7ea" stroke-opacity=".7" stroke-width="1.5"/><path d="M24 4v4M44 24h-4M24 44v-4M4 24h4" stroke="#fff7ea" stroke-width="2"/><line id="hh" x1="24" y1="24" x2="24" y2="13" stroke="#fff7ea" stroke-width="2.6" stroke-linecap="round"/><line id="mh" x1="24" y1="24" x2="24" y2="8" stroke="#fff7ea" stroke-width="1.8" stroke-linecap="round"/><line id="sh" x1="24" y1="27" x2="24" y2="6" stroke="#ffc66b" stroke-width="1" stroke-linecap="round"/><circle cx="24" cy="24" r="2" fill="#ffc66b"/></svg>
+<span class="ckt"><b id="dg">--:--</b><small>Kathmandu</small></span>
+</div>
+<div class="vis" id="vc" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7zm0 11a4 4 0 110-8 4 4 0 010 8zm0-2a2 2 0 100-4 2 2 0 000 4z"/></svg><b id="vn">0</b><span id="vl"> visitors</span></div>
+<button class="ins" id="ins" type="button" hidden>Install app</button>
+<div class="tip" id="tip" role="alert" hidden><p id="tt"></p><button id="tx" type="button" aria-label="Close">✕</button></div>
+<div class="top">
+<h1>90s Nepali Songs</h1>
+<p class="sub">जुना नेपाली गीत</p>
+<p class="tag">प्ले थिच्नुहोस्, पुराना दिनका गीत आफैं बज्छन्।</p>
+<button class="pick" id="pick" type="button"><small>★ Developer's favourite right now</small><span>Chahana Eutai Mero · Nabin K Bhattarai</span></button>
+</div>
+<div class="yt" id="ytbox" hidden>
+<div id="yt"></div>
+<button class="yc" id="yc" type="button"><span>भिडियो पनि हेर्ने?</span><small>Want to watch the video? Tap to show</small></button>
+<button class="yx" id="yx" type="button" aria-label="Hide video">✕</button>
+</div>
+<div class="ctl" id="ctl" role="group" aria-label="Music player">
+<div class="np"><b id="ti" aria-live="polite">गीत सुरु गर्न ▶ थिच्नुहोस्</b><span id="ar">90s Nepali Songs</span></div>
+<div class="sk"><span id="cu">0:00</span><input id="sb" type="range" min="0" max="100" value="0" step="1" aria-label="Seek" disabled><span id="du">0:00</span></div>
+<div class="bt">
+<button id="pv" type="button" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm3.500 6L18 6v12z"/></svg></button>
+<button id="pp" type="button" class="big" aria-label="Play"><svg class="i-p" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><svg class="i-z" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button>
+<button id="nx" type="button" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18V6l8.500 6z"/></svg></button>
+</div>
+<div class="ext"><button id="wk" type="button" aria-pressed="true">Keep screen on</button><small>Want it to keep playing with the screen off?</small><a id="ym" href="https://music.youtube.com/" target="_blank" rel="noopener">Open in YouTube Music</a><a id="pa" href="https://www.youtube.com/" target="_blank" rel="noopener">Play all on YouTube</a></div>
+</div>
+</header>
+<main class="ab">
+<h2>About</h2>
+<p>A small, free corner of the internet for the songs many of us grew up with. No sign-up, no song list, no searching: press play and let them roll.</p>
+<p>Made just for fun, for the love of the music. Nothing is sold, and there are no ads or trackers, only a simple visitor count.</p>
+</main>
+<footer>
+<p>Songs stream from official YouTube uploads. No audio is hosted here. All rights belong to the artists and labels.</p>
+<p>Visitor count: one anonymous hit per browser via abacus.jasoncameron.dev, no cookies.</p>
+<p>Takedown or correction requests: <a href="mailto:shakyasanush7@gmail.com">shakyasanush7@gmail.com</a></p>
+</footer>
+<script defer src="{{SONGS}}"></script>
+<script defer src="{{APP}}"></script>
+</body>
+</html>

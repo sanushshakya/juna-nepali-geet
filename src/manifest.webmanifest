@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "90s Nepali Songs",
+  "short_name": "90s Nepali",
+  "description": "Press play and classic Nepali songs keep playing. Free, no sign-up.",
+  "lang": "en",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#241f3a",
+  "theme_color": "#241f3a",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

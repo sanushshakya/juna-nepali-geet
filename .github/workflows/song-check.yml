@@ -1,0 +1,36 @@
+name: Weekly song check
+
+# YouTube videos get removed or made non-embeddable over time. This catches it early and opens an issue.
+on:
+  schedule:
+    - cron: "17 3 * * 1"   # Mondays 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Verify every song
+        shell: bash
+        run: node scripts/verify-songs.mjs 2>&1 | tee report.txt
+
+      - name: Open an issue if any song is broken
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create song-check --color D93F0B --description "A YouTube song needs attention" --force
+          if [ -z "$(gh issue list --label song-check --state open --json number --jq '.[].number')" ]; then
+            { echo "The weekly song check found a problem ([run]($RUN_URL)):"; echo; echo '```'; grep -E "^(FAIL|Problems| - )|problem" report.txt; echo '```'; } > body.md
+            gh issue create --title "A song is no longer playable" --label song-check --body-file body.md
+          fi

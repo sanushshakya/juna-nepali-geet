@@ -1,0 +1,190 @@
+name: CI/CD
+
+# Pull request -> checks -> Netlify preview (pr-N--site.netlify.app)
+# Push to main  -> checks -> Netlify production (needs approval if the "production" environment requires reviewers)
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    outputs:
+      songs_changed: ${{ steps.changes.outputs.songs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Did the song list change?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then base="origin/$BASE_REF"; else base="$BEFORE"; fi
+          if [ "$EVENT" = "workflow_dispatch" ] || ! git diff --name-only "$base" HEAD -- src/songs.js > changed.txt 2>/dev/null || [ -s changed.txt ]; then
+            echo "songs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "songs=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and check
+        run: npm run check
+        env:
+          # On main, fail while the placeholder takedown email is still in the page.
+          STRICT: ${{ github.ref == 'refs/heads/main' && '1' || '0' }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
+
+  lighthouse:
+    name: lighthouse
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Lighthouse CI (budgets in lighthouserc.json)
+        run: npm run lhci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          retention-days: 7
+
+  songs:
+    name: songs
+    needs: build
+    if: needs.build.outputs.songs_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Verify every YouTube video is embeddable
+        run: npm run verify-songs
+
+  deploy-preview:
+    name: deploy-preview
+    needs: [build, lighthouse, songs]
+    # Runs only for same-repo PRs by a human (fork and Dependabot PRs get no secrets). "songs" may be skipped.
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      needs.build.result == 'success' &&
+      needs.lighthouse.result == 'success' &&
+      (needs.songs.result == 'success' || needs.songs.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Deploy preview to Netlify
+        id: deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          ALIAS: pr-${{ github.event.number }}
+        run: |
+          npx --yes netlify-cli@17 deploy --dir=dist --alias="$ALIAS" --message="PR #${{ github.event.number }}" --json > deploy.json
+          echo "url=$(node -p "require('./deploy.json').deploy_url")" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test the preview
+        run: node scripts/smoke.mjs
+        env:
+          BASE_URL: ${{ steps.deploy.outputs.url }}
+
+      - name: Comment the preview URL on the PR
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = '<!-- netlify-preview -->';
+            const body = `${marker}\n**Preview ready:** ${process.env.PREVIEW_URL}\n\nCommit \`${context.sha.slice(0, 7)}\` · checks, Lighthouse budgets and smoke test passed.`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
+
+  deploy-production:
+    name: deploy-production
+    needs: [build, lighthouse, songs]
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.build.result == 'success' &&
+      needs.lighthouse.result == 'success' &&
+      (needs.songs.result == 'success' || needs.songs.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Deploy to Netlify (production)
+        id: deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npx --yes netlify-cli@17 deploy --dir=dist --prod --message="${GITHUB_SHA::7}" --json > deploy.json
+          echo "url=$(node -p "require('./deploy.json').url")" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test production
+        run: node scripts/smoke.mjs
+        env:
+          BASE_URL: ${{ steps.deploy.outputs.url }}

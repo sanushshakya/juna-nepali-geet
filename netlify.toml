@@ -1,0 +1,9 @@
+# Used by Netlify for manual `netlify deploy` and as documentation.
+# Day-to-day deploys come from GitHub Actions, which uploads the prebuilt dist/ with the Netlify CLI.
+# Headers are generated into dist/_headers by build.mjs (single source of truth).
+[build]
+  command = "node build.mjs"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
