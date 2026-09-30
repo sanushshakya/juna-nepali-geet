@@ -1,5 +1,7 @@
 # 90s Nepali Songs · जुना नेपाली गीत
 
+**Live site:** https://imaginative-faun-f78a65.netlify.app (deployed from `main` by the CI/CD pipeline below)
+
 A single page. Press play and classic Nepali songs from the 90s to 2010s keep playing. No song list, search or accounts. A personal, non-commercial project.
 
 - Plain HTML/CSS/JS, no framework, no backend, no libraries, no analytics or trackers. The one exception is a simple visitor counter (below).
