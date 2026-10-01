@@ -10,6 +10,11 @@
 import http from 'node:http';
 import https from 'node:https';
 import http2 from 'node:http2';
+import net from 'node:net';
+
+// Node 20 gives each connect attempt only 250 ms (Happy Eyeballs); under a burst of handshakes that shows up as ETIMEDOUT
+// even though the server is fine, so allow a realistic browser-like timeout.
+net.setDefaultAutoSelectFamilyAttemptTimeout?.(5000);
 import {performance} from 'node:perf_hooks';
 import {writeFileSync,appendFileSync} from 'node:fs';
 

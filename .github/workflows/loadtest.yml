@@ -21,6 +21,10 @@ on:
         description: "Users arriving within one second (0 = skip, max 300)"
         required: true
         default: "100"
+      spike_window_ms:
+        description: "Milliseconds over which the spike users arrive (0-10000)"
+        required: true
+        default: "1000"
       max_p95_ms:
         description: "Fail if the p95 full page load is slower than this (the spike gets double)"
         required: true
@@ -51,6 +55,7 @@ jobs:
           LEVELS: ${{ inputs.levels }}
           DURATION: ${{ inputs.duration }}
           SPIKE: ${{ inputs.spike }}
+          SPIKE_WINDOW: ${{ inputs.spike_window_ms }}
           MAX_P95_PAGE_MS: ${{ inputs.max_p95_ms }}
         run: node scripts/loadtest.mjs
 
