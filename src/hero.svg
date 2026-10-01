@@ -41,7 +41,8 @@
 <symbol id="rl" viewBox="0 0 8 3"><path d="M0 1.500Q2 0 4 1.500T8 1.500" fill="none" stroke="#fff" stroke-width="1"/></symbol>
 </defs>
 
-<rect x="-40" width="1680" height="900" fill="url(#sk)"/>
+<rect x="-3000" y="-1500" width="7600" height="1500" fill="#2d4a86"/>
+<rect x="-3000" width="7600" height="900" fill="url(#sk)"/>
 <circle cx="1340" cy="290" r="380" fill="url(#sn)"/>
 <circle cx="1340" cy="290" r="26" fill="#fff7dc"/>
 <g fill="#fff" opacity=".22"><ellipse cx="300" cy="120" rx="240" ry="5"/><ellipse cx="1100" cy="86" rx="280" ry="4"/><ellipse cx="700" cy="230" rx="200" ry="4"/><ellipse cx="1450" cy="190" rx="160" ry="4"/></g>
@@ -149,7 +150,7 @@
 <path class="fl" d="M649.600 483h7l-3.500 8z" fill="#3d7ddb"/><path class="fl" d="M664 485h7l-3.500 8z" fill="#f4f4f4" style="animation-delay:-.4s"/><path class="fl" d="M678 486h7l-3.500 8z" fill="#d6453d" style="animation-delay:-.8s"/><path class="fl" d="M692.500 484h7l-3.500 8z" fill="#3da35d" style="animation-delay:-1.200s"/><path class="fl" d="M707 481h7l-3.500 8z" fill="#f0c93a" style="animation-delay:-1.600s"/><path class="fl" d="M721 475h7l-3.500 8z" fill="#3d7ddb" style="animation-delay:-2s"/>
 </g></g>
 
-<rect x="-40" width="1680" height="900" fill="url(#wm)"/>
+<rect x="-40" y="-1500" width="1680" height="3900" fill="url(#wm)"/>
 <g class="sun" opacity=".5"><path d="M1340 290 330 900H620Z" fill="url(#ry)" opacity=".5"/><path d="M1340 290 760 900H940Z" fill="url(#ry)" opacity=".4"/><path d="M1340 290 1040 900H1180Z" fill="url(#ry)" opacity=".4"/></g>
 
 <g data-d="30"><path d="M-40 790Q250 740 520 775T1040 765T1640 780V900H-40Z" fill="#2b4735"/><path d="M-40 790Q250 740 520 775T1040 765T1640 780V800Q1040 786 520 796T-40 812Z" fill="url(#gp)" opacity=".5"/><path d="M-40 830Q300 790 700 820T1640 815V900H-40Z" fill="#1b2f27"/>
@@ -157,4 +158,5 @@
 <use href="#rd" x="130" y="770" width="26" height="19"/><use href="#rd" x="1420" y="766" width="28" height="20"/><use href="#rd" x="330" y="772" width="22" height="16"/><use href="#rk" x="190" y="782" width="26" height="15" fill="#6a6872"/><use href="#rk" x="1250" y="778" width="30" height="17"/><use href="#rk" x="80" y="790" width="22" height="13"/>
 <g stroke="#4a6a3c" stroke-width="1.400" fill="none" opacity=".8"><path d="M240 790 236 772M244 790 248 770M250 790 256 774M1180 784 1176 766M1186 784 1190 764M1192 784 1198 768M1380 786 1376 770M1386 786 1392 768"/></g>
 </g>
+<rect x="-3000" y="890" width="7600" height="1500" fill="#1b2f27"/>
 </svg>

@@ -46,7 +46,7 @@ input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:line
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;background:var(--g);border:0}
 input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--g);border:0}
 input:disabled{cursor:default}
-.bt{display:flex;justify-content:center;align-items:center;gap:22px}
+.bt{position:relative;display:flex;justify-content:center;align-items:center;gap:22px}
 button,input{touch-action:manipulation}
 button{display:grid;place-items:center;width:48px;height:48px;border:0;border-radius:50%;background:none;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button svg{width:28px;height:28px;fill:currentColor}
@@ -64,7 +64,10 @@ button svg{width:28px;height:28px;fill:currentColor}
 .ext small{flex-basis:100%;font-size:12px;opacity:.75}
 .ext a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid #ffc66b99;border-radius:999px;font-size:14px;text-decoration:none}
 #ym{background:var(--g);color:#3a2410;border-color:var(--g)}
-@media(hover:none),(display-mode:standalone){.ext{display:flex}}
+@media(hover:none),(display-mode:standalone){.mo{display:grid}.more .ext{display:flex}}
+.mo{display:none;position:absolute;right:0;top:50%;margin-top:-22px;width:44px;height:44px;border:1px solid #ffffff40}
+.mo svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+.more .mo svg{transform:rotate(180deg)}
 .ab{max-width:640px;margin:0 auto;padding:56px 20px 24px;text-align:center}
 .ab h2{font-size:22px;font-weight:500;margin-bottom:10px;color:var(--g)}
 .ab p{opacity:.88;margin-top:8px}
@@ -72,7 +75,23 @@ footer{max-width:640px;margin:0 auto;padding:24px 20px 40px;text-align:center;fo
 footer p+p{margin-top:6px}
 a{color:var(--g)}
 @media(min-width:700px){.ckt small{display:block}h1{padding-left:0;padding-right:0}}
-@media(max-width:699px){.yt{position:fixed;left:-2000px;right:auto;top:0;pointer-events:none;box-shadow:none}.top{top:calc(max(14px,env(safe-area-inset-top)) + 58px)}h1{padding:0}.vis,.ins{left:auto;right:12px}.vis{top:max(12px,env(safe-area-inset-top))}.ins{top:calc(max(12px,env(safe-area-inset-top)) + 34px)}}
+@media(max-width:699px){
+.hero>svg{inset:auto;left:-38.89vw;top:max(170px,calc(100svh - 100vw - 214px - env(safe-area-inset-bottom)));width:177.78vw;height:100vw;overflow:visible}
+.yt{position:fixed;left:-2000px;right:auto;top:0;pointer-events:none;box-shadow:none}
+.top{top:calc(max(14px,env(safe-area-inset-top)) + 58px)}
+h1{padding:0}
+.vis,.ins{left:auto;right:12px}
+.vis{top:max(12px,env(safe-area-inset-top))}
+.ins{top:calc(max(12px,env(safe-area-inset-top)) + 34px)}
+.ctl{padding:10px 14px 12px;border-radius:20px}
+.np b{font-size:17px}
+.np span{font-size:13px}
+.sk{margin:0}
+input[type=range]{height:34px}
+.bt{gap:26px}
+.big{width:60px;height:60px}
+.big svg{width:30px;height:30px}
+}
 @media(min-width:900px){.yt{top:20px;right:20px}}
 .hero svg *{transform-box:fill-box}
 .cl{animation:dr var(--t,200s) linear infinite;animation-delay:var(--l,0s)}

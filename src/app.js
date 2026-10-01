@@ -96,6 +96,7 @@ $('pick').onclick=()=>{
 if(!P)return boot();
 if(ready){ids=order();P.loadPlaylist(ids,0,0);P.setLoop(true)}
 };
+$('mo').onclick=()=>{const o=ctl.classList.toggle('more');$('mo').setAttribute('aria-expanded',String(o))};
 $('yc').onclick=()=>box.classList.add('open');
 $('yx').onclick=()=>box.classList.remove('open');
 pv.onclick=()=>{if(!P)boot();else if(ready)P.previousVideo()};
