@@ -48,7 +48,7 @@ There is no unit-test framework; the gates above are the tests. Local Node is 18
 
 - Branch -> PR -> checks -> squash merge -> approve the production run in GitHub (the user clicks Approve); verify the live site with `BASE_URL=... npm run smoke`.
 - Commits use the repo-local GitHub no-reply identity (global git email is a work address; do not publish it) and end with the `Co-Authored-By: Claude ...` trailer.
-- The About text and README promise "no ads or trackers, only a simple visitor count". Do not add analytics/third-party scripts without telling the user (an unreviewed Cloudflare Web Analytics snippet currently sits uncommitted in `src/index.html` in the working tree; do not commit it unless the user confirms).
+- Privacy wording (About text, footer, README) names the two measurement tools: the Abacus visitor counter and Cloudflare Web Analytics (static snippet at the end of `src/index.html`; its token is public). Keep that wording accurate if analytics change, and do not add other third-party scripts without telling the user.
 - Stage files explicitly (`git add <paths>`), not `git add -A`: stray screenshots such as `iphone13-preview.png` appear in the project root.
 - Browser testing: the Chrome automation tab can be reported as hidden (YouTube blocks autoplay, clock/animations pause) and may be wrapped in a phone-preview frame; use a fresh tab. For phone-size screenshots, render with headless Chrome (`--window-size=390,844 --screenshot`) around an iframe test page kept outside `dist/`.
 - Real-device testing needs HTTPS (wake lock, PWA install, correct iPhone home-screen icon): use the Netlify URL in Safari. Plain `http://<LAN IP>:8090` only works as a bookmark.
