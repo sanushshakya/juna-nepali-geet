@@ -95,9 +95,10 @@ every Monday ─> weekly song check ─> opens an issue if a YouTube video is no
 | `smoke` | `scripts/smoke.mjs` against the deployed URL: page, manifest, `sw.js`, icons, hashed JS load; on Netlify it also checks cache and security headers and HTTPS. | `BASE_URL=http://localhost:8090 npm run smoke` |
 
 ### Load test (manual job)
-Run **Actions > Load test > Run workflow** (or `gh workflow run loadtest.yml`). It runs on GitHub's servers, so it uses none of your own bandwidth. Defaults: a 1-user baseline, then 10 / 25 / 50 concurrent users for 15 s each, then 100 users arriving at the same instant. Each "page load" is the HTML plus 4 parallel requests (2 scripts, manifest, favicon) over fresh TLS connections. Results appear as a table on the run page and as a downloadable `loadtest-results.json`.
+Run **Actions > Load test > Run workflow** (or `gh workflow run loadtest.yml`). It runs on GitHub's servers, so it uses none of your own bandwidth. Defaults: a 1-user baseline, then 10 / 25 / 50 concurrent users for 15 s each, then 100 users arriving within one second. Every virtual user uses its own HTTP/2 connection (like a browser), and each "page load" is the HTML plus 4 parallel requests (2 scripts, manifest, favicon). Results appear as a table on the run page and as a downloadable `loadtest-results.json`.
 
 - The run **fails** if more than 1% of page loads fail or the p95 full-page time exceeds the threshold (default 3000 ms, double for the spike).
+- A load generator on one IP opening hundreds of brand-new TLS connections in the same instant gets throttled by the CDN's per-IP protection (that is what the first version of this test hit), so users arrive over a short window (`SPIKE_WINDOW`, default 1 s) and use one HTTP/2 connection each. Use `HTTP_VERSION=1` to force the old HTTP/1.1 behaviour.
 - Safety limits: only `*.netlify.app` (and localhost) can be targeted; users are capped at 200 per stage, 60 s per stage, 300 in a spike.
 - Locally: `BASE_URL=http://localhost:8090 npm run loadtest` (tiny numbers first; against the live site it uses your own network data).
 - It measures network and server time, not browser rendering (use `npm run lhci` for that), and it does not exercise YouTube.

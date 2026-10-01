@@ -18,7 +18,7 @@ on:
         required: true
         default: "15"
       spike:
-        description: "Users arriving at the same instant (0 = skip, max 300)"
+        description: "Users arriving within one second (0 = skip, max 300)"
         required: true
         default: "100"
       max_p95_ms:
