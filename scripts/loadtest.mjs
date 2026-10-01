@@ -80,12 +80,15 @@ function connect(){
 }
 
 let ASSETS=[];
-async function session(){
-  const conn=connect();
+// A page load: the HTML, then the other files in parallel. With `conn` given it reuses that (warm) connection;
+// otherwise it opens a fresh one and closes it afterwards (cold: includes DNS/TCP/TLS setup).
+async function session(conn){
+  const own=!conn;
+  if(own)conn=connect();
   const s0=performance.now();
   const page=await conn.get('/');
   const rest=await Promise.all(ASSETS.map(p=>conn.get(p)));
-  conn.close();
+  if(own)conn.close();
   const all=[page,...rest];
   return{page,all,total:performance.now()-s0,ok:all.every(r=>r.status===200)};
 }
@@ -121,22 +124,30 @@ const results=[];
 const show=r=>console.log(`${r.pass?'PASS':'FAIL'}  ${r.stage.padEnd(20)} sessions ${String(r.sessions).padStart(4)}  failed ${String(r.failed).padStart(3)}  req/s ${String(r.reqPerSec).padStart(6)}  html p50/p95 ${r.htmlP50}/${r.htmlP95} ms  page-load p50/p95/max ${r.loadP50}/${r.loadP95}/${r.loadMax} ms  codes ${JSON.stringify(r.codes)}`);
 
 {const t0=performance.now(),ss=[];for(let i=0;i<5;i++){ss.push(await session());await sleep(300)}
- const r=summarize('baseline (1 user)',ss,(performance.now()-t0)/1000,MAX_P95);results.push(r);show(r)}
+ const r=summarize('baseline (1 cold user)',ss,(performance.now()-t0)/1000,MAX_P95);results.push(r);show(r)}
 
 for(const users of LEVELS){
   const end=performance.now()+DURATION*1000,ss=[];
   await Promise.all(Array.from({length:users},async(_,i)=>{
     await sleep((i/users)*1000);
-    while(performance.now()<end){ss.push(await session());await sleep(THINK_MIN+Math.random()*(THINK_MAX-THINK_MIN))}
+    // Warm stage: each user keeps one connection (as a browser does between page views) and reloads over it.
+    // Opening a new TLS connection per page load from a single machine just measures per-IP connection throttling.
+    let conn=connect();
+    while(performance.now()<end){
+      const r=await session(conn);ss.push(r);
+      if(!r.ok){conn.close();conn=connect()}   // reconnect after a failure
+      await sleep(THINK_MIN+Math.random()*(THINK_MAX-THINK_MIN));
+    }
+    conn.close();
   }));
-  const r=summarize(`steady ${users} users`,ss,DURATION,MAX_P95);results.push(r);show(r);
+  const r=summarize(`steady ${users} users (warm)`,ss,DURATION,MAX_P95);results.push(r);show(r);
   await sleep(1500);
 }
 
 if(SPIKE){
   const t0=performance.now();
   const ss=await Promise.all(Array.from({length:SPIKE},async()=>{await sleep(Math.random()*SPIKE_WINDOW);return session()}));
-  const r=summarize(`spike ${SPIKE} in ${SPIKE_WINDOW/1000}s`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
+  const r=summarize(`spike ${SPIKE} cold in ${SPIKE_WINDOW/1000}s`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
 }
 
 const hasDiag=Object.keys(diag.goaway).length||Object.keys(diag.errors).length;
@@ -147,6 +158,6 @@ console.log(`\nData received: ${mb} MB | thresholds: error rate <= ${MAX_ERR*100
 writeFileSync('loadtest-results.json',JSON.stringify({diagnostics:diag,target:BASE.origin,when:new Date().toISOString(),dataMB:mb,thresholds:{maxErrorRate:MAX_ERR,maxP95PageMs:MAX_P95},results},null,1));
 if(process.env.GITHUB_STEP_SUMMARY){
   const rows=results.map(r=>`| ${r.pass?'✅':'❌'} | ${r.stage} | ${r.sessions} | ${r.failed} | ${r.reqPerSec} | ${r.htmlP50} / ${r.htmlP95} | ${r.loadP50} / ${r.loadP95} / ${r.loadMax} |`).join('\n');
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Load test: ${BASE.origin}\n\n| | Stage | Page loads | Failed | Requests/s | HTML p50 / p95 (ms) | Full page p50 / p95 / max (ms) |\n|---|---|---|---|---|---|---|\n${rows}\n\n**${allPass?'Passed':'Failed'}** (error rate <= ${MAX_ERR*100}%, p95 page load <= ${MAX_P95} ms, spike x2). Data received: ${mb} MB.\n\nA "page load" is the HTML followed by ${ASSETS.length} parallel requests (2 scripts, manifest, favicon) over a fresh connection per user (${H2?'HTTP/2':'HTTP/1.1'}). It measures network and server time, not browser rendering.\n`);
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Load test: ${BASE.origin}\n\n| | Stage | Page loads | Failed | Requests/s | HTML p50 / p95 (ms) | Full page p50 / p95 / max (ms) |\n|---|---|---|---|---|---|---|\n${rows}\n\n**${allPass?'Passed':'Failed'}** (error rate <= ${MAX_ERR*100}%, p95 page load <= ${MAX_P95} ms, spike x2). Data received: ${mb} MB.\n\nA "page load" is the HTML followed by ${ASSETS.length} parallel requests (2 scripts, manifest, favicon) (${H2?'HTTP/2':'HTTP/1.1'}). Baseline and spike use a fresh connection per user (cold, includes TLS setup); the steady stages keep one connection per user (warm). It measures network and server time, not browser rendering.\n`);
 }
 process.exit(allPass?0:1);
