@@ -4,10 +4,12 @@
 //   BASE_URL=https://your-site.netlify.app node scripts/loadtest.mjs
 //
 // Env: LEVELS="10,25,50" (users per stage, max 200)  DURATION=15 (seconds per stage, max 60)  SPIKE=100 (users at once, 0 = skip, max 300)
+//      SPIKE_WINDOW=1000 (ms over which the spike users arrive)  HTTP_VERSION=2|1 (default 2 for https, like a browser: one connection per user)
 //      THINK_MIN=500 THINK_MAX=1500 (ms)  MAX_ERROR_RATE=0.01  MAX_P95_PAGE_MS=3000  (the spike gets twice the latency allowance)
 // Safety: only *.netlify.app and localhost are allowed, and the numbers above are capped, so this cannot be pointed at someone else's site.
 import http from 'node:http';
 import https from 'node:https';
+import http2 from 'node:http2';
 import {performance} from 'node:perf_hooks';
 import {writeFileSync,appendFileSync} from 'node:fs';
 
@@ -21,13 +23,15 @@ const num=(k,d,max)=>Math.min(max,Math.max(0,Number.parseInt(process.env[k]??d,1
 const LEVELS=(process.env.LEVELS||'10,25,50').split(',').map(x=>Math.min(200,Math.max(1,Number.parseInt(x,10)||0))).filter(Boolean).slice(0,6);
 const DURATION=Math.max(1,num('DURATION',15,60)),SPIKE=num('SPIKE',100,300);
 const THINK_MIN=num('THINK_MIN',500,10000),THINK_MAX=Math.max(THINK_MIN,num('THINK_MAX',1500,10000));
+const SPIKE_WINDOW=num('SPIKE_WINDOW',1000,10000);
+const H2=BASE.protocol==='https:'&&process.env.HTTP_VERSION!=='1';
 const MAX_ERR=Number.parseFloat(process.env.MAX_ERROR_RATE??'0.01'),MAX_P95=Number.parseInt(process.env.MAX_P95_PAGE_MS??'3000',10);
 
 const lib=BASE.protocol==='http:'?http:https;
 const port=BASE.port||(BASE.protocol==='http:'?80:443);
 let wireBytes=0;
 
-function get(agent,path){
+function getH1(agent,path){
   return new Promise(resolve=>{
     const t0=performance.now();let ttfb=null,bytes=0,done=false;
     const fin=r=>{if(done)return;done=true;resolve({path,ttfb,total:performance.now()-t0,bytes,...r})};
@@ -43,13 +47,38 @@ function get(agent,path){
   });
 }
 
+// HTTP/2: one TLS connection per virtual user, requests multiplexed over it (what a browser does).
+function getH2(client,path){
+  return new Promise(resolve=>{
+    const t0=performance.now();let ttfb=null,bytes=0,status=0,done=false;
+    const fin=r=>{if(done)return;done=true;resolve({path,ttfb,total:performance.now()-t0,bytes,...r})};
+    if(client.destroyed||client.closed){fin({status:0,err:'connection closed'});return}
+    let req;
+    try{req=client.request({':path':path,'accept-encoding':'br, gzip','user-agent':'loadtest/1.0 (github-actions)'})}
+    catch(e){fin({status:0,err:e.code||e.message});return}
+    req.setTimeout(20000,()=>{req.close(http2.constants.NGHTTP2_CANCEL);fin({status:0,err:'timeout'})});
+    req.on('response',h=>{ttfb=performance.now()-t0;status=h[':status']});
+    req.on('data',c=>{bytes+=c.length;wireBytes+=c.length});
+    req.on('end',()=>fin({status}));
+    req.on('error',e=>fin({status:0,err:e.code||e.message}));
+    client.once('error',e=>fin({status:0,err:e.code||e.message}));
+    req.end();
+  });
+}
+
+function connect(){
+  if(H2){const c=http2.connect(BASE.origin);c.on('error',()=>{});c.setTimeout(20000,()=>c.destroy());return{get:p=>getH2(c,p),close:()=>c.close()}}
+  const agent=new lib.Agent({keepAlive:true,maxSockets:6});
+  return{get:p=>getH1(agent,p),close:()=>agent.destroy()};
+}
+
 let ASSETS=[];
 async function session(){
-  const agent=new lib.Agent({keepAlive:true,maxSockets:6});
+  const conn=connect();
   const s0=performance.now();
-  const page=await get(agent,'/');
-  const rest=await Promise.all(ASSETS.map(p=>get(agent,p)));
-  agent.destroy();
+  const page=await conn.get('/');
+  const rest=await Promise.all(ASSETS.map(p=>conn.get(p)));
+  conn.close();
   const all=[page,...rest];
   return{page,all,total:performance.now()-s0,ok:all.every(r=>r.status===200)};
 }
@@ -79,7 +108,7 @@ const html=await new Promise((res,rej)=>{
   }).on('error',rej);
 }).catch(e=>{console.error('Cannot reach the site: '+e.message);process.exit(2)});
 ASSETS=[...html.matchAll(/(?:src|href)="((?:app|songs)\.[0-9a-f]{8}\.js)"/g)].map(m=>'/'+m[1]).concat('/manifest.webmanifest','/favicon.ico');
-console.log(`Target ${BASE.origin} | stages: ${LEVELS.join(', ')} users x ${DURATION}s | spike: ${SPIKE||'off'} | assets/session: ${ASSETS.length+1}\n`);
+console.log(`Target ${BASE.origin} | ${H2?'HTTP/2 (1 connection per user)':'HTTP/1.1'} | stages: ${LEVELS.join(', ')} users x ${DURATION}s | spike: ${SPIKE?SPIKE+' users within '+SPIKE_WINDOW+' ms':'off'} | requests/session: ${ASSETS.length+1}\n`);
 
 const results=[];
 const show=r=>console.log(`${r.pass?'PASS':'FAIL'}  ${r.stage.padEnd(20)} sessions ${String(r.sessions).padStart(4)}  failed ${String(r.failed).padStart(3)}  req/s ${String(r.reqPerSec).padStart(6)}  html p50/p95 ${r.htmlP50}/${r.htmlP95} ms  page-load p50/p95/max ${r.loadP50}/${r.loadP95}/${r.loadMax} ms  codes ${JSON.stringify(r.codes)}`);
@@ -99,8 +128,8 @@ for(const users of LEVELS){
 
 if(SPIKE){
   const t0=performance.now();
-  const ss=await Promise.all(Array.from({length:SPIKE},()=>session()));
-  const r=summarize(`spike ${SPIKE} at once`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
+  const ss=await Promise.all(Array.from({length:SPIKE},async()=>{await sleep(Math.random()*SPIKE_WINDOW);return session()}));
+  const r=summarize(`spike ${SPIKE} in ${SPIKE_WINDOW/1000}s`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
 }
 
 const mb=+(wireBytes/1048576).toFixed(1),allPass=results.every(r=>r.pass);
@@ -109,6 +138,6 @@ console.log(`\nData received: ${mb} MB | thresholds: error rate <= ${MAX_ERR*100
 writeFileSync('loadtest-results.json',JSON.stringify({target:BASE.origin,when:new Date().toISOString(),dataMB:mb,thresholds:{maxErrorRate:MAX_ERR,maxP95PageMs:MAX_P95},results},null,1));
 if(process.env.GITHUB_STEP_SUMMARY){
   const rows=results.map(r=>`| ${r.pass?'✅':'❌'} | ${r.stage} | ${r.sessions} | ${r.failed} | ${r.reqPerSec} | ${r.htmlP50} / ${r.htmlP95} | ${r.loadP50} / ${r.loadP95} / ${r.loadMax} |`).join('\n');
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Load test: ${BASE.origin}\n\n| | Stage | Page loads | Failed | Requests/s | HTML p50 / p95 (ms) | Full page p50 / p95 / max (ms) |\n|---|---|---|---|---|---|---|\n${rows}\n\n**${allPass?'Passed':'Failed'}** (error rate <= ${MAX_ERR*100}%, p95 page load <= ${MAX_P95} ms, spike x2). Data received: ${mb} MB.\n\nA "page load" is the HTML followed by ${ASSETS.length} parallel requests (2 scripts, manifest, favicon) over fresh connections. It measures network and server time, not browser rendering.\n`);
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Load test: ${BASE.origin}\n\n| | Stage | Page loads | Failed | Requests/s | HTML p50 / p95 (ms) | Full page p50 / p95 / max (ms) |\n|---|---|---|---|---|---|---|\n${rows}\n\n**${allPass?'Passed':'Failed'}** (error rate <= ${MAX_ERR*100}%, p95 page load <= ${MAX_P95} ms, spike x2). Data received: ${mb} MB.\n\nA "page load" is the HTML followed by ${ASSETS.length} parallel requests (2 scripts, manifest, favicon) over a fresh connection per user (${H2?'HTTP/2':'HTTP/1.1'}). It measures network and server time, not browser rendering.\n`);
 }
 process.exit(allPass?0:1);
