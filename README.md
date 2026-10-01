@@ -4,7 +4,7 @@
 
 A single page. Press play and classic Nepali songs from the 90s to 2010s keep playing. No song list, search or accounts. A personal, non-commercial project.
 
-- Plain HTML/CSS/JS, no framework, no backend, no libraries, no analytics or trackers. The one exception is a simple visitor counter (below).
+- Plain HTML/CSS/JS, no framework, no backend, no libraries, no ads, no cookies. Visits are measured by a simple visitor counter (see below) and by Cloudflare Web Analytics (cookieless; one script at the end of `src/index.html`).
 - Audio is **not** hosted: songs stream through the YouTube IFrame Player API from official artist/label uploads.
 - Nothing from YouTube loads until the first press of play (the API script and player are created on demand; a `preconnect` is added when the play button is hovered/focused/touched).
 - The hero is a detailed inline-SVG illustration (Gaurishankar's twin-peak silhouette (Shankar and Gauri with the saddle between), glacier, lake, river, terraces, village, a stupa with a vajra, a gumba, a Shiva temple with trishul, animals, people, foreground) animated with `transform`/`opacity` only. Animations pause when the tab is hidden or the hero is off-screen, and are disabled under `prefers-reduced-motion`.
@@ -64,6 +64,10 @@ Lighthouse 11 (mobile): PWA 100, Performance 99, Accessibility 100, Best Practic
 ## Visitor counter
 
 After load, `app.js` makes one request to the free keyless [Abacus](https://abacus.jasoncameron.dev) counter API: `hit` the first time a browser visits (remembered in `localStorage`), `get` afterwards, so each browser counts once. The count shows under the clock and stays hidden if the request fails. It is skipped entirely on localhost, private-network addresses and Netlify preview hosts (`--` in the hostname), so testing never changes the live number. The counter name is the `juna-nepali-geet-...` string in `src/app.js`; change it to start a new count. It is not secret, so anyone who knows it could bump the number.
+
+## Cloudflare Web Analytics
+
+`src/index.html` ends with Cloudflare's Web Analytics beacon (`static.cloudflareinsights.com/beacon.min.js`, with the site token in `data-cf-beacon`; the token is public by design). Cloudflare states it uses no cookies or localStorage and does not fingerprint visitors. The About text and the footer say so; keep that wording in sync if the analytics setup changes. Previews, local servers and CI test runs also load the beacon unless it is filtered in the Cloudflare dashboard.
 
 ## Featured song
 
