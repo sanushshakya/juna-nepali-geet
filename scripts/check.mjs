@@ -21,6 +21,11 @@ for(const f of [...hashed,'sw.js']){
   catch(e){fail('syntax error in '+f+': '+String(e.stderr||e.message).split('\n')[0])}
 }
 
+for(const f of readdirSync(new URL('scripts/',root)).filter(f=>f.endsWith('.mjs'))){
+  try{execFileSync(process.execPath,['--check',fileURLToPath(new URL('scripts/'+f,root))],{stdio:'pipe'})}
+  catch(e){fail('syntax error in scripts/'+f+': '+String(e.stderr||e.message).split('\n')[0])}
+}
+
 if(existsSync(new URL('index.html',dist))){
   const html=readFileSync(new URL('index.html',dist),'utf8');
   if(html.includes('{{'))fail('index.html still contains a {{placeholder}}');

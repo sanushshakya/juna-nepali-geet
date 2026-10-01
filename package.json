@@ -10,7 +10,8 @@
     "check": "node scripts/check.mjs",
     "verify-songs": "node scripts/verify-songs.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "lhci": "npx --yes @lhci/cli@0.13.x autorun"
+    "lhci": "npx --yes @lhci/cli@0.13.x autorun",
+    "loadtest": "node scripts/loadtest.mjs"
   },
   "engines": {
     "node": ">=18"
