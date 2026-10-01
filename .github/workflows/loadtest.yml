@@ -10,9 +10,9 @@ on:
         required: true
         default: "https://imaginative-faun.netlify.app"
       levels:
-        description: "Concurrent users per stage, comma separated (each 1-200)"
+        description: "Concurrent users per stage, comma separated (each 1-200). About 50+ users (~200+ req/s from this one runner IP) trips the CDN's per-IP throttling"
         required: true
-        default: "10,25,50"
+        default: "10,25"
       duration:
         description: "Seconds per stage (1-60)"
         required: true

@@ -3,7 +3,7 @@
 //
 //   BASE_URL=https://your-site.netlify.app node scripts/loadtest.mjs
 //
-// Env: LEVELS="10,25,50" (users per stage, max 200)  DURATION=15 (seconds per stage, max 60)  SPIKE=100 (users at once, 0 = skip, max 300)
+// Env: LEVELS="10,25" (users per stage, max 200)  DURATION=15 (seconds per stage, max 60)  SPIKE=100 (users at once, 0 = skip, max 300)
 //      SPIKE_WINDOW=1000 (ms over which the spike users arrive)  HTTP_VERSION=2|1 (default 2 for https, like a browser: one connection per user)
 //      THINK_MIN=500 THINK_MAX=1500 (ms)  MAX_ERROR_RATE=0.01  MAX_P95_PAGE_MS=3000  (the spike gets twice the latency allowance)
 // Safety: only *.netlify.app and localhost are allowed, and the numbers above are capped, so this cannot be pointed at someone else's site.
@@ -25,7 +25,7 @@ if(!/(^|\.)netlify\.app$/.test(BASE.hostname)&&!['localhost','127.0.0.1'].includ
   console.error(`Refusing to load-test ${BASE.hostname}: only *.netlify.app and localhost are allowed.`);process.exit(2);
 }
 const num=(k,d,max)=>Math.min(max,Math.max(0,Number.parseInt(process.env[k]??d,10)||0));
-const LEVELS=(process.env.LEVELS||'10,25,50').split(',').map(x=>Math.min(200,Math.max(1,Number.parseInt(x,10)||0))).filter(Boolean).slice(0,6);
+const LEVELS=(process.env.LEVELS||'10,25').split(',').map(x=>Math.min(200,Math.max(1,Number.parseInt(x,10)||0))).filter(Boolean).slice(0,6);
 const DURATION=Math.max(1,num('DURATION',15,60)),SPIKE=num('SPIKE',100,300);
 const THINK_MIN=num('THINK_MIN',500,10000),THINK_MAX=Math.max(THINK_MIN,num('THINK_MAX',1500,10000));
 const SPIKE_WINDOW=num('SPIKE_WINDOW',1000,10000);
@@ -126,6 +126,13 @@ const show=r=>console.log(`${r.pass?'PASS':'FAIL'}  ${r.stage.padEnd(20)} sessio
 {const t0=performance.now(),ss=[];for(let i=0;i<5;i++){ss.push(await session());await sleep(300)}
  const r=summarize('baseline (1 cold user)',ss,(performance.now()-t0)/1000,MAX_P95);results.push(r);show(r)}
 
+// The cold spike runs before the heavy stages: a sustained high request rate from one IP makes the CDN briefly refuse that IP.
+if(SPIKE){
+  const t0=performance.now();
+  const ss=await Promise.all(Array.from({length:SPIKE},async()=>{await sleep(Math.random()*SPIKE_WINDOW);return session()}));
+  const r=summarize(`spike ${SPIKE} cold in ${SPIKE_WINDOW/1000}s`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
+}
+
 for(const users of LEVELS){
   const end=performance.now()+DURATION*1000,ss=[];
   await Promise.all(Array.from({length:users},async(_,i)=>{
@@ -142,12 +149,6 @@ for(const users of LEVELS){
   }));
   const r=summarize(`steady ${users} users (warm)`,ss,DURATION,MAX_P95);results.push(r);show(r);
   await sleep(1500);
-}
-
-if(SPIKE){
-  const t0=performance.now();
-  const ss=await Promise.all(Array.from({length:SPIKE},async()=>{await sleep(Math.random()*SPIKE_WINDOW);return session()}));
-  const r=summarize(`spike ${SPIKE} cold in ${SPIKE_WINDOW/1000}s`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
 }
 
 const hasDiag=Object.keys(diag.goaway).length||Object.keys(diag.errors).length;
