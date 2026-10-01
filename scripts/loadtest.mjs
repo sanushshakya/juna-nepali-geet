@@ -30,6 +30,8 @@ const MAX_ERR=Number.parseFloat(process.env.MAX_ERROR_RATE??'0.01'),MAX_P95=Numb
 const lib=BASE.protocol==='http:'?http:https;
 const port=BASE.port||(BASE.protocol==='http:'?80:443);
 let wireBytes=0;
+const diag={goaway:{},errors:{}};   // why connections died: server GOAWAY codes and distinct low-level errors
+const note=(k,m)=>{diag[k][m]=(diag[k][m]||0)+1};
 
 function getH1(agent,path){
   return new Promise(resolve=>{
@@ -60,14 +62,14 @@ function getH2(client,path){
     req.on('response',h=>{ttfb=performance.now()-t0;status=h[':status']});
     req.on('data',c=>{bytes+=c.length;wireBytes+=c.length});
     req.on('end',()=>fin({status}));
-    req.on('error',e=>fin({status:0,err:e.code||e.message}));
+    req.on('error',e=>{note('errors',`stream ${e.code||e.name}: ${String(e.message).slice(0,80)}`);fin({status:0,err:e.code||e.message})});
     client.once('error',e=>fin({status:0,err:e.code||e.message}));
     req.end();
   });
 }
 
 function connect(){
-  if(H2){const c=http2.connect(BASE.origin);c.on('error',()=>{});c.setTimeout(20000,()=>c.destroy());return{get:p=>getH2(c,p),close:()=>c.close()}}
+  if(H2){const c=http2.connect(BASE.origin);c.on('error',e=>note('errors',`${e.code||e.name}: ${String(e.message).slice(0,80)}`));c.on('goaway',code=>note('goaway','code '+code));c.setTimeout(20000,()=>c.destroy());return{get:p=>getH2(c,p),close:()=>c.close()}}
   const agent=new lib.Agent({keepAlive:true,maxSockets:6});
   return{get:p=>getH1(agent,p),close:()=>agent.destroy()};
 }
@@ -132,10 +134,12 @@ if(SPIKE){
   const r=summarize(`spike ${SPIKE} in ${SPIKE_WINDOW/1000}s`,ss,(performance.now()-t0)/1000,MAX_P95*2);results.push(r);show(r);
 }
 
+const hasDiag=Object.keys(diag.goaway).length||Object.keys(diag.errors).length;
+if(hasDiag)console.log('\nConnection diagnostics: '+JSON.stringify(diag));
 const mb=+(wireBytes/1048576).toFixed(1),allPass=results.every(r=>r.pass);
 console.log(`\nData received: ${mb} MB | thresholds: error rate <= ${MAX_ERR*100}%, p95 page load <= ${MAX_P95} ms (x2 for the spike)\n${allPass?'LOAD TEST PASSED':'LOAD TEST FAILED'}`);
 
-writeFileSync('loadtest-results.json',JSON.stringify({target:BASE.origin,when:new Date().toISOString(),dataMB:mb,thresholds:{maxErrorRate:MAX_ERR,maxP95PageMs:MAX_P95},results},null,1));
+writeFileSync('loadtest-results.json',JSON.stringify({diagnostics:diag,target:BASE.origin,when:new Date().toISOString(),dataMB:mb,thresholds:{maxErrorRate:MAX_ERR,maxP95PageMs:MAX_P95},results},null,1));
 if(process.env.GITHUB_STEP_SUMMARY){
   const rows=results.map(r=>`| ${r.pass?'✅':'❌'} | ${r.stage} | ${r.sessions} | ${r.failed} | ${r.reqPerSec} | ${r.htmlP50} / ${r.htmlP95} | ${r.loadP50} / ${r.loadP95} / ${r.loadMax} |`).join('\n');
   appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Load test: ${BASE.origin}\n\n| | Stage | Page loads | Failed | Requests/s | HTML p50 / p95 (ms) | Full page p50 / p95 / max (ms) |\n|---|---|---|---|---|---|---|\n${rows}\n\n**${allPass?'Passed':'Failed'}** (error rate <= ${MAX_ERR*100}%, p95 page load <= ${MAX_P95} ms, spike x2). Data received: ${mb} MB.\n\nA "page load" is the HTML followed by ${ASSETS.length} parallel requests (2 scripts, manifest, favicon) over a fresh connection per user (${H2?'HTTP/2':'HTTP/1.1'}). It measures network and server time, not browser rendering.\n`);
