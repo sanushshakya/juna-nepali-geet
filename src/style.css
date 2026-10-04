@@ -66,6 +66,9 @@ button svg{width:28px;height:28px;fill:currentColor}
 #ym{background:var(--g);color:#3a2410;border-color:var(--g)}
 @media(hover:none),(display-mode:standalone){.mo{display:grid}.more .ext{display:flex}}
 .mo{display:none;position:absolute;right:0;top:50%;margin-top:-22px;width:44px;height:44px;border:1px solid #ffffff40}
+.mp{display:none;position:absolute;left:0;top:50%;margin-top:-22px;width:44px;height:44px;border:1px solid #ffffff40}
+.mp.ok{display:grid}
+.mp svg{width:22px;height:22px;fill:currentColor}
 .mo svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
 .more .mo svg{transform:rotate(180deg)}
 .ab{max-width:640px;margin:0 auto;padding:56px 20px 24px;text-align:center}
