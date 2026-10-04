@@ -42,6 +42,7 @@ const v=P.getVideoData&&P.getVideoData(),s=v&&byId[v.video_id];
 if(s){ym.href='https://music.youtube.com/watch?v='+s.youtubeId;ti.textContent=s.title;ar.textContent=s.artist;
 if('mediaSession'in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:s.title,artist:s.artist,album:'जुना नेपाली गीत'})}
 const d=P.getDuration();if(d){sb.max=d;du.textContent=fmt(d)}
+pipUI();
 }
 function upd(){
 if(drag||!ready)return;
@@ -79,6 +80,7 @@ pp.setAttribute('aria-label',d===1||d===3?'Pause':'Play');
 if(d===1){errs=0;ctl.classList.remove('ld');sb.disabled=false;meta();upd();run()}
 else if(d===2||d===5)stop();
 if(d===1||d===3)lock();else if(d===2||d===5)unlock();
+pipUI();
 }
 function onError(){
 if(++errs>=S.length){ti.textContent='गीत बजाउन सकिएन';ar.textContent='Please try again later';return}
@@ -145,6 +147,27 @@ m.setActionHandler('play',()=>pp.onclick());
 m.setActionHandler('pause',()=>pp.onclick());
 m.setActionHandler('nexttrack',()=>nx.onclick());
 m.setActionHandler('previoustrack',()=>pv.onclick());
+}
+
+const mp=$('mp');let pw,pt,pr,pb;
+function pipUI(){
+if(!pw)return;
+pt.textContent=ti.textContent;pr.textContent=ar.textContent;
+pb.classList.toggle('on',ctl.classList.contains('on'));pb.setAttribute('aria-label',pp.getAttribute('aria-label'));
+}
+if('documentPictureInPicture'in window){
+mp.classList.add('ok');
+mp.onclick=async()=>{
+if(pw)return pw.close();
+try{
+const w=await documentPictureInPicture.requestWindow({width:340,height:150}),d=w.document;
+d.head.innerHTML='<style>*{box-sizing:border-box}body{margin:0;height:100vh;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:12px;background:#1c1632;color:#fff;font:14px system-ui,sans-serif;text-align:center}b{display:block;font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}span{font-size:13px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}div{display:flex;justify-content:center;align-items:center;gap:18px}button{width:44px;height:44px;display:grid;place-items:center;border:1px solid #ffffff40;border-radius:50%;background:none;color:#fff;cursor:pointer}button:hover{background:#ffffff1f}.big{width:52px;height:52px;background:#ffc66b;border-color:#ffc66b;color:#3a2410}svg{width:24px;height:24px;fill:currentColor}.i-z{display:none}.on .i-z{display:block}.on .i-p{display:none}</style>';
+d.body.innerHTML='<b></b><span></span><div><button type="button" aria-label="Previous song">'+pv.innerHTML+'</button><button type="button" class="big">'+pp.innerHTML+'</button><button type="button" aria-label="Next song">'+nx.innerHTML+'</button></div>';
+const k=d.querySelectorAll('button');pt=d.querySelector('b');pr=d.querySelector('span');pb=k[1];
+k[0].onclick=()=>pv.onclick();k[1].onclick=()=>pp.onclick();k[2].onclick=()=>nx.onclick();
+pw=w;w.addEventListener('pagehide',()=>{pw=null});pipUI();
+}catch(e){say('The mini player could not open. It needs a recent Chrome or Edge on a computer.')}
+};
 }
 
 const nep=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kathmandu',hour:'numeric',minute:'numeric',second:'numeric',hour12:false});
