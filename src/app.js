@@ -1,14 +1,14 @@
 (()=>{
 const $=id=>document.getElementById(id),S=window.SONGS,byId={};
 S.forEach(s=>byId[s.youtubeId]=s);
-const ym=$('ym'),pa=$('pa'),hero=$('hero'),ctl=$('ctl'),box=$('ytbox'),pp=$('pp'),pv=$('pv'),nx=$('nx'),sb=$('sb'),ti=$('ti'),ar=$('ar'),cu=$('cu'),du=$('du');
+const ym=$('ym'),bg=$('bg'),pa=$('pa'),hero=$('hero'),ctl=$('ctl'),box=$('ytbox'),pp=$('pp'),pv=$('pv'),nx=$('nx'),sb=$('sb'),ti=$('ti'),ar=$('ar'),cu=$('cu'),du=$('du');
 if(matchMedia('(display-mode:standalone)').matches||navigator.standalone)document.documentElement.classList.add('app');
 const fmt=s=>{s=s|0;return(s/60|0)+':'+String(s%60).padStart(2,'0')};
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const F=S.find(s=>s.featured)||S[0],order=()=>[F.youtubeId].concat(shuffle(S.filter(s=>s!==F)).map(s=>s.youtubeId));
-ym.href='https://music.youtube.com/watch?v='+F.youtubeId;
+ym.href=bg.href='https://music.youtube.com/watch?v='+F.youtubeId;
 pa.href='https://www.youtube.com/watch_videos?video_ids='+order().join(',');
-[ym,pa].forEach(a=>a.addEventListener('click',()=>{if(P&&ready)P.pauseVideo()}));
+[ym,pa,bg].forEach(a=>a.addEventListener('click',()=>{if(P&&ready)P.pauseVideo()}));
 let ids,P,ready,timer,errs=0,drag=0,warmed=0,booting=0,vis=1;
 
 function warm(){
@@ -39,7 +39,7 @@ document.head.appendChild(s);
 
 function meta(){
 const v=P.getVideoData&&P.getVideoData(),s=v&&byId[v.video_id];
-if(s){ym.href='https://music.youtube.com/watch?v='+s.youtubeId;ti.textContent=s.title;ar.textContent=s.artist;
+if(s){ym.href=bg.href='https://music.youtube.com/watch?v='+s.youtubeId;ti.textContent=s.title;ar.textContent=s.artist;
 if('mediaSession'in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:s.title,artist:s.artist,album:'जुना नेपाली गीत'})}
 const d=P.getDuration();if(d){sb.max=d;du.textContent=fmt(d)}
 pipUI();
