@@ -1,0 +1,59 @@
+name: Weekly songs refresh
+
+# Hands-off: verifies the songs, prunes dead ones, rotates the featured song, builds and deploys.
+# It commits nothing (main is protected and this needs no approval); the change lives in the deploy only.
+# A normal code deploy from main goes back to the committed songs until the next Monday run.
+on:
+  schedule:
+    - cron: "41 3 * * 1"   # Mondays 03:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Prune dead songs and rotate the featured one
+        run: node scripts/update-songs.mjs --write
+
+      - name: Build and verify
+        run: |
+          npm run check
+          node scripts/verify-songs.mjs
+
+      - name: Deploy to Netlify (production)
+        id: deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npx --yes netlify-cli@17 deploy --dir=dist --prod --message="weekly songs refresh" --json > deploy.json
+          echo "url=$(node -p "require('./deploy.json').url")" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test production
+        run: node scripts/smoke.mjs
+        env:
+          BASE_URL: ${{ steps.deploy.outputs.url }}
+
+      - name: Open an issue if the refresh failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create songs-weekly --color D93F0B --description "Weekly songs refresh failed" --force
+          if [ -z "$(gh issue list --label songs-weekly --state open --json number --jq '.[].number')" ]; then
+            gh issue create --title "Weekly songs refresh failed" --label songs-weekly --body "The refresh did not complete, so the live site is unchanged ([run]($RUN_URL))."
+          fi
