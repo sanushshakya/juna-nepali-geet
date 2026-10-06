@@ -13,7 +13,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: deploy-production
+  group: songs-weekly
   cancel-in-progress: false
 
 jobs:
