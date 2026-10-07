@@ -1,4 +1,5 @@
 // Every ID was checked via YouTube oEmbed: embeddable, and uploaded by the artist's or label's own channel.
+// Era rule: songs must be from 1990-2019. New entries should carry `year:` (original release year); verify-songs rejects any `year` outside 1990-2019.
 window.SONGS=[
 {title:"Chahana Eutai Mero",artist:"Nabin K Bhattarai",youtubeId:"13jNoqQWBTc",featured:true},
 {title:"Resham",artist:"Nepathya",youtubeId:"BpeFXed4K6I"},

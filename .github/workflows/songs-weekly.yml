@@ -1,6 +1,6 @@
 name: Weekly songs refresh
 
-# Hands-off: verifies the songs, prunes dead ones, rotates the featured song, builds and deploys.
+# Hands-off: verifies the songs, prunes dead or out-of-era (1990-2019) ones, builds and deploys.
 # It commits nothing (main is protected and this needs no approval); the change lives in the deploy only.
 # A normal code deploy from main goes back to the committed songs until the next Monday run.
 on:
@@ -25,7 +25,7 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Prune dead songs and rotate the featured one
+      - name: Prune dead or out-of-era songs
         run: node scripts/update-songs.mjs --write
 
       - name: Build and verify
