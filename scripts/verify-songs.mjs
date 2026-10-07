@@ -15,6 +15,7 @@ if(!Array.isArray(songs)||!songs.length){console.error('src/songs.js must define
 const seen=new Set();
 for(const s of songs){
   if(!s.title||!s.artist)problems.push(`missing title/artist: ${JSON.stringify(s)}`);
+  if(s.year!==undefined&&!(Number.isInteger(s.year)&&s.year>=1990&&s.year<=2019))problems.push(`outside the 1990-2019 era: ${s.title} (year ${s.year})`);
   if(!/^[\w-]{11}$/.test(s.youtubeId||''))problems.push(`bad video ID format: ${s.title} -> ${s.youtubeId}`);
   if(seen.has(s.youtubeId))problems.push(`duplicate video ID: ${s.youtubeId} (${s.title})`);
   seen.add(s.youtubeId);
