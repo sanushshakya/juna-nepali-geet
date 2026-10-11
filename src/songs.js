@@ -40,5 +40,11 @@ window.SONGS=[
 {title:"Jadai Chu Tadha",artist:"Sugam Pokharel",youtubeId:"rrm98rTABo4"},
 {title:"Timi Nai Hau",artist:"Sabin Rai",youtubeId:"L6aC_lKIajY"},
 {title:"Sannani",artist:"Kutumba",youtubeId:"31O8vtEVT7E"},
-{title:"Jaba Sandhya Hunchha",artist:"Yogeshwar Amatya",youtubeId:"r1Bd96CVC78"}
+{title:"Jaba Sandhya Hunchha",artist:"Yogeshwar Amatya",youtubeId:"r1Bd96CVC78"},
+{title:"Hongkong Pokhara",artist:"Kandara Band",year:1998,youtubeId:"YzZr55v1QRY"},
+{title:"Maya Meri Maya",artist:"Crossroads",year:1992,youtubeId:"YB-Znhuwxso"},
+{title:"Mero Sansar",artist:"Sugam Pokharel",year:2001,youtubeId:"t1BA36X1z7g"},
+{title:"Mutu Chune Lumle Ko Hawale",artist:"Parivesh",youtubeId:"pMZ3WNleAok"},
+{title:"Sarkari Jagir",artist:"Dr. Pilots",youtubeId:"wT9-bIfG0FI"},
+{title:"Aakashai Ma Chil Udyo",artist:"Gloomy Guys",youtubeId:"BQYDCKhFzjU"}
 ];
